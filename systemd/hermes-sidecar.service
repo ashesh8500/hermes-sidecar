@@ -1,0 +1,36 @@
+# hermes-sidecar systemd user unit for Linux.
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp systemd/hermes-sidecar.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable hermes-sidecar.service
+#   systemctl --user start hermes-sidecar.service
+#
+# Logs:  journalctl --user -u hermes-sidecar -f
+#        ~/.hermes/sidecar/daemon.log
+
+[Unit]
+Description=hermes-sidecar — adaptive Syncthing resource governance
+Documentation=https://github.com/ashesh8500/hermes-sidecar
+After=syncthing.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/hermes-sidecar daemon
+Restart=on-failure
+RestartSec=30
+
+# Environment
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+# Logging (also writes to ~/.hermes/sidecar/daemon.log internally)
+StandardOutput=journal
+StandardError=journal
+
+# Prevent the daemon from spawning as root
+User=%u
+
+[Install]
+WantedBy=default.target

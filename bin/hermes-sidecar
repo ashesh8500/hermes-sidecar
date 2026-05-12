@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""hermes-sidecar launcher — adds the repo root to sys.path and invokes the CLI.
+
+This script lives in the ``bin/`` directory of the hermes-sidecar repository.
+It locates the repository root (the parent of ``bin/``), adds it to
+``sys.path``, and calls ``sidecar.cli:main()``.
+
+Usage::
+
+    bin/hermes-sidecar status
+    bin/hermes-sidecar daemon
+    bin/hermes-sidecar throttle 500
+"""
+
+import sys
+from pathlib import Path
+
+# Determine the repository root (parent of the directory containing this file).
+_repo_root = Path(__file__).resolve().parent.parent
+_sys_path_entry = str(_repo_root)
+if _sys_path_entry not in sys.path:
+    sys.path.insert(0, _sys_path_entry)
+
+from sidecar.cli import main  # noqa: E402
+
+main()
