@@ -500,6 +500,7 @@ def generate_stignore_cmd(path: str) -> None:
             click.echo("Aborted.")
             return
 
+    stignore_path.parent.mkdir(parents=True, exist_ok=True)
     stignore_path.write_text(content)
     click.echo(f"Generated .stignore for {ptype} project → {stignore_path}")
 
