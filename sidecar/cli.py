@@ -2,6 +2,7 @@
 hermes-sidecar CLI — adaptive resource governance for Syncthing parity.
 
 Commands
+    kanban              View the Hermes Agent kanban board (progress + status).
     status              Show power, battery, CPU, and Syncthing folder states.
     daemon              Run the adaptive daemon event loop (--one-shot for single poll).
     throttle [KBPS]     Get or set the Syncthing bandwidth limit (0 = unlimited).
@@ -25,6 +26,8 @@ import textwrap
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+from sidecar import kanban as _kanban
 
 IS_MACOS: bool = platform.system() == "Darwin"
 
@@ -521,6 +524,61 @@ def init_config_cmd() -> None:
     click.echo("  - actions.on_battery_pause")
     click.echo()
     click.echo("Then run:  hermes-sidecar daemon")
+
+
+# ---------------------------------------------------------------------------
+# Kanban board
+# ---------------------------------------------------------------------------
+
+
+@main.group("kanban", invoke_without_command=True)
+@click.option("--mine", is_flag=True, help="Show only tasks assigned to $HERMES_PROFILE.")
+@click.option("--watch", "-w", is_flag=True, help="Live-refresh the dashboard (Ctrl-C to exit).")
+@click.option("--json", "as_json", is_flag=True, help="Export raw JSON instead of the dashboard.")
+@click.option("--tenant", default=None, help="Filter by tenant name.")
+@click.pass_context
+def kanban_cmd(
+    ctx: click.Context,
+    mine: bool,
+    watch: bool,
+    as_json: bool,
+    tenant: Optional[str],
+) -> None:
+    """View the Hermes Agent kanban board.
+
+    Default (no flags): render a rich dashboard with progress bars,
+    per-status breakdowns, per-assignee breakdowns, in-flight tasks,
+    blocked tasks, and recent completions.
+
+    \b
+    Examples:
+      hermes-sidecar kanban              # Full dashboard
+      hermes-sidecar kanban --mine       # Only my tasks
+      hermes-sidecar kanban --watch      # Live-refresh every 5s
+      hermes-sidecar kanban --json       # Machine-readable export
+    """
+    # If a subcommand was given, invoke it
+    if ctx.invoked_subcommand is not None:
+        return
+
+    if watch:
+        _kanban.watch_loop(mine=mine, tenant=tenant)
+        return
+
+    tasks = _kanban.fetch_tasks(mine=mine, tenant=tenant)
+
+    if as_json:
+        click.echo(_kanban.export_json(tasks))
+        return
+
+    click.echo(_kanban.render_dashboard(tasks))
+
+
+@kanban_cmd.command("mine")
+def kanban_mine() -> None:
+    """Alias for --mine: show only your assigned tasks."""
+    tasks = _kanban.fetch_tasks(mine=True)
+    click.echo(_kanban.render_dashboard(tasks))
 
 
 # ---------------------------------------------------------------------------
