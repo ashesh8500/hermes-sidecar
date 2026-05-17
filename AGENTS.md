@@ -151,6 +151,28 @@ When adding a new state, update five places:
 5. Use `sys.exit(1)` on fatal errors
 6. Update the module docstring at the top of `cli.py` with the new command
 
+### Adding a kanban dashboard section
+
+The kanban module (`sidecar/kanban.py`) renders a terminal dashboard by reading
+from ``hermes kanban list --json``.  To extend the dashboard:
+
+1. **New section** — add a render function (e.g. ``_render_velocity()``) and
+   call it from ``render_dashboard()``.  Keep sections self-contained.
+2. **New data field** — modify ``fetch_tasks()`` to pass additional CLI flags
+   (e.g. ``--archived``) upstream.
+3. **New view** — add a ``@kanban_cmd.command()`` subcommand in ``cli.py``
+   (see ``kanban mine`` for the pattern).
+4. **Watch mode** — ``watch_loop()`` clears the terminal and re-renders.  Any
+   section added to ``render_dashboard()`` automatically appears in watch mode.
+
+Kanban conventions:
+- ``fetch_tasks()`` is the only function that shells out to ``hermes``.
+- Display helpers (``_bar``, ``_format_age``, ``_truncate``) are shared.
+- Status icons and order are defined in ``_STATUS_ICONS`` / ``_STATUS_ORDER``.
+- ``render_dashboard()`` returns a string — never prints directly.
+- The CLI ``kanban_cmd`` group handles ``--watch`` / ``--json`` / ``--mine``
+  dispatch; do not add decision logic to the kanban module.
+
 ### Adding platform support
 
 Currently supported: macOS (Darwin) and Linux.  To add a new platform:
@@ -280,6 +302,7 @@ canned output strings.
 | `sidecar/monitors/network.py` | Interface + SSID detection | Adding network conditions |
 | `sidecar/actions/syncthing.py` | Syncthing REST client | Adding API endpoints |
 | `sidecar/actions/notify.py` | Desktop notifications | Adding notification backends |
+| `sidecar/kanban.py` | Kanban board dashboard | Adding dashboard sections, new views |
 | `bin/hermes-sidecar` | Launcher script | Changing import paths |
 | `launchd/com.hermes-sidecar.plist` | macOS service template | Changing daemon args |
 | `systemd/hermes-sidecar.service` | Linux service template | Changing daemon args |
